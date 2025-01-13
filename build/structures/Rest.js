@@ -96,15 +96,15 @@ class Rest {
     getRoutePlannerAddress(address) {
         return this.makeRequest("POST", `/${this.version}/routeplanner/free/address`, { address });
     }
-    async getLyrics(track, guildId) {
-        console.log(track);
-
-        // debugging ^^
-        console.log(this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${guildId}/lyrics`)) // https://github.com/DRSchlaubi/lyrics.kt
-        console.log(this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${guildId}/lyrics`)) // https://github.com/DuncteBot/java-timed-lyrics
-        console.log(this.makeRequest("GET", `/v4/lyrics?track=${track.track.encoded}&skipTrackSource=true`)) // https://github.com/topi314/LavaLyrics
-
-        return this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${guildId}/lyrics`);
+    async getLyrics(track) {
+        console.log(track)
+        console.log(track.track.encoded)
+        console.log(track.track.guild_id)
+        // Debugging requests
+        console.log(this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${track.track.guild_id}/lyrics`)); 
+        console.log(this.makeRequest("GET", `/v4/lyrics?track=${track.track.encoded}&skipTrackSource=true`)); 
+        
+        return this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${track.track.guild_id}/lyrics`);
     }
 }
 
