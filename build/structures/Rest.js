@@ -97,14 +97,7 @@ class Rest {
         return this.makeRequest("POST", `/${this.version}/routeplanner/free/address`, { address });
     }
     async getLyrics(track) {
-        console.log(track)
-        console.log(track.track.encoded)
-        console.log(track.track.guild_id)
-        // Debugging requests
-        console.log(this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${track.track.guild_id}/lyrics`)); 
-        console.log(this.makeRequest("GET", `/v4/lyrics?track=${track.track.encoded}&skipTrackSource=true`)); 
-        
-        return this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${track.track.guild_id}/lyrics`);
+        return await this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${track.track.guild_id}/track/lyrics?skipTrackSource=false`);
     }
 }
 
