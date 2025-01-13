@@ -107,7 +107,7 @@ class Player extends EventEmitter {
 
     async lyrics() {
         if (!this.playing) return null;
-        const response = await this.nodes.rest.getLyrics({ track: { encoded: this.current.track } });
+        const response = await this.nodes.rest.getLyrics({ track: { encoded: this.current.track }, guildId: this.guildId });
         console.log(response);
         return response || null;
     }
