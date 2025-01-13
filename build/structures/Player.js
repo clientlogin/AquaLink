@@ -107,18 +107,15 @@ class Player extends EventEmitter {
 
     async lyrics() {
         if (!this.playing) return null;
-        console.log(this.guildId);
-    
         const response = await this.nodes.rest.getLyrics({
             track: {
               encoded: this.current.track,
               guild_id: this.guildId
             },
           });
-    
-        console.log(response);
         return response || null;
     }
+
     seek(position) {
         if (!this.playing) return this; 
         const newPosition = this.position + position;
