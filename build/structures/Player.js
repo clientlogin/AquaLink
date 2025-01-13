@@ -49,6 +49,10 @@ class Player extends EventEmitter {
         return this.previousTracks.length ? this.previousTracks[0] : null;
     }
 
+    get currenttrack() {
+        return this.current;
+    }
+
     addToPreviousTrack(track) {
         if (this.previousTracks.length >= 50) {
             this.previousTracks.pop();
@@ -101,11 +105,21 @@ class Player extends EventEmitter {
         return this;
     }
 
+    async lyrics() {
+        if (!this.playing) return null;
+        const response = await this.nodes.rest.getLyrics({ track: { encoded: this.current.track } });
+        console.log(response);
+        return response || null;
+    }
+
     seek(position) {
-        if (position < 0) throw new Error("Seek position cannot be negative.");
-        if (!this.playing) return this;
-        this.position = position;
-        this.updatePlayer({ position });
+        if (!this.playing) return this; 
+        const newPosition = this.position + position;
+        if (newPosition < 0) {
+            throw new Error("Seek position cannot be negative.");
+        }
+        this.position = newPosition;
+        this.updatePlayer({ position: this.position });
         return this;
     }
 
@@ -220,7 +234,6 @@ class Player extends EventEmitter {
             try {
                 await this.nowPlayingMessage.delete();
             } catch (error) {
-                // Consider logging specific errors
             } finally {
                 this.nowPlayingMessage = null;
             }
