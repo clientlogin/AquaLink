@@ -96,6 +96,12 @@ class Rest {
     getRoutePlannerAddress(address) {
         return this.makeRequest("POST", `/${this.version}/routeplanner/free/address`, { address });
     }
+    async getLyrics(track, options) {
+        console.log(track);
+        // debugging ^^
+
+        return this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${options.guildId}/lyrics`);
+    }
 }
 
 module.exports = { Rest };
