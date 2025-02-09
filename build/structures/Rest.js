@@ -1,13 +1,14 @@
-const { request } = require("undici");
+const { Pool } = require("undici");
 
 class Rest {
     constructor(aqua, options) {
         this.aqua = aqua;
-        this.url = `http${options.secure ? "s" : ""}://${options.host}:${options.port}`;
         this.sessionId = options.sessionId;
         this.password = options.password;
         this.version = options.restVersion || "v4";
         this.calls = 0;
+        this.baseUrl = `http${options.secure ? "s" : ""}://${options.host}:${options.port}`;
+        this.pool = new Pool(this.baseUrl, { connections: 8 });
         this.headers = {
             "Content-Type": "application/json",
             Authorization: this.password,
@@ -19,44 +20,46 @@ class Rest {
     }
 
     async makeRequest(method, endpoint, body = null) {
-        const options = {
+        const opts = {
             method,
-            headers: this.headers,
+            headers: { ...this.headers },
         };
 
         if (body) {
-            options.body = JSON.stringify(body);
+            opts.body = JSON.stringify(body);
         }
 
-        const response = await request(`${this.url}${endpoint}`, options);
-        if (response.statusCode === 204) return null;
-        this.calls++;
-        const data = await response.body.json();
-        this.aqua.emit("apiResponse", endpoint, {
-            status: response.statusCode,
-            headers: response.headers,
-        });
-        response.body.destroy();
-        return data;
+        const path = endpoint;
+
+        let response;
+            response = await this.pool.request({ path, ...opts });
+            if (response.statusCode === 204) {
+                return null;
+            }
+            this.calls++;
+            const data = await response.body.json();
+            this.aqua.emit("apiResponse", endpoint, {
+                status: response.statusCode,
+                headers: response.headers,
+            });
+            return data;
+        
     }
 
-     updatePlayer(options) {
-        const requestBody = { ...options.data };
+    updatePlayer(options) {
+        const { data, guildId } = options;
+        let requestBody = { ...data };
 
-        if ((requestBody.track?.encoded && requestBody.track?.identifier) ||
-            (requestBody.encodedTrack && requestBody.identifier)) {
+        if (
+            (requestBody.track?.encoded && requestBody.track?.identifier) ||
+            (requestBody.encodedTrack && requestBody.identifier)
+        ) {
             throw new Error("Cannot provide both 'encoded' and 'identifier' for track");
-        }
-
-        if (this.version === "v3" && requestBody.track) {
-            const { track } = requestBody;
-            delete requestBody.track;
-            requestBody[track.encoded ? 'encodedTrack' : 'identifier'] = track.encoded || track.identifier;
         }
 
         return this.makeRequest(
             "PATCH",
-            `/${this.version}/sessions/${this.sessionId}/players/${options.guildId}?noReplace=false`,
+            `/${this.version}/sessions/${this.sessionId}/players/${guildId}?noReplace=false`,
             requestBody
         );
     }
@@ -82,7 +85,10 @@ class Rest {
     }
 
     getStats() {
-        return this.makeRequest("GET", `/${this.version}/stats${this.version !== "v3" ? "/all" : ""}`);
+        return this.makeRequest(
+            "GET",
+            `/${this.version}/stats${this.version !== "v3" ? "/all" : ""}`
+        );
     }
 
     getInfo() {
@@ -96,8 +102,22 @@ class Rest {
     getRoutePlannerAddress(address) {
         return this.makeRequest("POST", `/${this.version}/routeplanner/free/address`, { address });
     }
-    async getLyrics(track) {
-        return await this.makeRequest("GET", `/v4/sessions/${this.sessionId}/players/${track.track.guild_id}/track/lyrics?skipTrackSource=false`);
+
+    async getLyrics({ track }) {
+        if (track.search) {
+            const v2 = await this.makeRequest(
+                "GET",
+                `/v4/lyrics/search?query=${encodeURIComponent(track.encoded.info.title)}&source=genius`
+            );
+            if (v2) {
+                return v2;
+            }
+        }
+        const v4 = await this.makeRequest(
+            "GET",
+            `/v4/sessions/${this.sessionId}/players/${track.guild_id}/track/lyrics?skipTrackSource=false`
+        );
+        return v4;
     }
 }
 
