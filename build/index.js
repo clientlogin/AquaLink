@@ -1,11 +1,11 @@
-const Connection = require("./structures/Connection");
-const Filters = require("./structures/Filters");
-const Node = require("./structures/Node");
-const Aqua = require("./structures/Aqua");
-const Player = require("./structures/Player");
-const Plugin = require("./structures/Plugins");
-const Queue = require("./structures/Queue");
-const Rest = require("./structures/Rest");
-const Track = require("./structures/Track");
+import { Connection } from "./structures/Connection.js";
+import { Filters } from "./structures/Filters.js";
+import { Node } from "./structures/Node.js";
+import { Aqua } from "./structures/Aqua.js";
+import { Player } from "./structures/Player.js";
+import { Plugin } from "./structures/Plugins.js";
+import { Queue } from "./structures/Queue.js";
+import { Rest } from "./structures/Rest.js";
+import { Track } from "./structures/Track.js";
 
-module.exports = { Connection, Filters, Node, Aqua, Player, Plugin, Queue, Rest, Track };
+export { Connection, Filters, Node, Aqua, Player, Plugin, Queue, Rest, Track };
