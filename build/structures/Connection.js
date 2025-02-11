@@ -79,4 +79,4 @@ class Connection {
     }
 }
 
-module.exports = Connection;
+export {Connection};
