@@ -1,9 +1,9 @@
 "use strict";
 
-const { EventEmitter } = require("events");
-const  Connection = require("./Connection");
-const  Queue  = require("./Queue");
-const  Filters  = require("./Filters");
+import { EventEmitter } from "events";
+import {Connection} from "./Connection.js";
+import {Queue} from "./Queue.js";
+import {Filters} from "./Filters.js";
 
 class Player extends EventEmitter {
     static LOOP_MODES = Object.freeze({
@@ -349,4 +349,4 @@ class Player extends EventEmitter {
     }
 }
 
-module.exports = Player 
+export {Player} 
