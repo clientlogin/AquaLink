@@ -1,15 +1,13 @@
 {
   "name": "aqualink",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "An Lavalink wrapper, focused in speed, performance, and features, Based in Riffy!",
   "main": "build/index.js",
-  "scripts": {
-    "start": "node ./build/index.js"
-  },
+  "types": "build/index.d.ts",
+  "type": "module",
   "exports": {
-    ".": {
-      "require": "./build/index.js"
-    }
+    "require": "./build/index.js",
+    "import": "./build/index.js"   
   },
   "keywords": [
     "lavalink",
@@ -50,3 +48,4 @@
     }
   ]
 }
+
