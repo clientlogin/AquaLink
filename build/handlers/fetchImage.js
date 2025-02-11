@@ -1,4 +1,4 @@
-const { request } = require("undici");
+import { request } from "undici";
 const sourceHandlers = new Map([
     ['spotify', uri => fetchThumbnail(`https://open.spotify.com/oembed?url=${uri}`)],
     ['youtube', identifier => fetchYouTubeThumbnail(identifier)]
@@ -44,4 +44,5 @@ async function fetchYouTubeThumbnail(identifier) {
     }
 }
 
-module.exports = { getImageUrl };
+export { getImageUrl };
+
