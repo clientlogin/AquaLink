@@ -1,10 +1,9 @@
 "use strict";
 
-const { EventEmitter } = require("node:events");
-const  Node = require("./Node");
-const  Player  = require("./Player");
-const  Track  = require("./Track");
-const { version: pkgVersion } = require("../../package.json");
+import { EventEmitter } from "node:events";
+import {Node} from "./Node.js";
+import {Player} from "./Player.js";
+import {Track} from "./Track.js";
 const URL_REGEX = /^https?:\/\//;
 
 class Aqua extends EventEmitter {
@@ -34,7 +33,7 @@ class Aqua extends EventEmitter {
         this.leaveOnEnd = this.getOption(options, 'leaveOnEnd', true);
         this.restVersion = this.getOption(options, 'restVersion', 'v4');
         this.plugins = this.getOption(options, 'plugins', []);
-        this.version = pkgVersion;
+        this.version = '1.8.1-beta1';
         this.send = options.send || this.defaultSendFunction;
         this.autoResume = this.getOption(options, 'autoResume', false);
         this.infiniteReconnects = this.getOption(options, 'infiniteReconnects', false);
@@ -276,4 +275,4 @@ class Aqua extends EventEmitter {
     }
 }
 
-module.exports = Aqua 
+export { Aqua }; 
