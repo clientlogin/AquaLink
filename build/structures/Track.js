@@ -1,5 +1,5 @@
 "use strict";
-const { getImageUrl } = require("../handlers/fetchImage");
+import { getImageUrl } from "../handlers/fetchImage.js";
 /**
  * @typedef {import("../Aqua")} Aqua
  * @typedef {import("../structures/Player")} Player
@@ -77,4 +77,4 @@ class Track {
     return null;
   }
 }
-module.exports = Track;
+export {Track};
