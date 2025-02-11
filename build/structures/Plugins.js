@@ -8,4 +8,4 @@ class Plugin {
     unload(aqua) { }
 }
 
-module.exports = Plugin 
+export {Plugin} 
