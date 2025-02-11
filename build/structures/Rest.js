@@ -1,5 +1,5 @@
 "use strict";
-const { request } = require("undici");
+import { request } from "undici";
 
 class Rest {
     constructor(aqua, { secure, host, port, sessionId, password }) {
@@ -117,4 +117,4 @@ class Rest {
     }
 }
 
-module.exports = Rest;
+export {Rest};
