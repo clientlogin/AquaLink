@@ -94,4 +94,4 @@ class Queue extends Array {
 
 }
 
-module.exports =  Queue 
+export  {Queue} 
