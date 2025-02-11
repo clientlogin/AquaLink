@@ -1,7 +1,7 @@
 "use strict";
 
-const WebSocket = require("ws");
-const  Rest  = require("./Rest");
+import WebSocket from "ws";
+import {Rest} from "./Rest.js";
 
 class Node {
     #ws = null;
@@ -100,8 +100,9 @@ class Node {
     async getStats() {
         if (!this.connected) return this.stats;
         const now = Date.now();
-        const STATS_COOLDOWN = 60000;
+        const STATS_COOLDOWN = 60000; // 1 minute cooldown
         if (now - this.#lastStatsRequest < STATS_COOLDOWN) return this.stats;
+    
         try {
             const stats = await this.rest.makeRequest("GET", "/v4/stats");
             this.stats = { ...this.#createStats(), ...stats };
@@ -167,7 +168,6 @@ class Node {
         const op = payload?.op;
         if (!op) return;
 
-        // Use switch for better performance with multiple conditions
         switch (op) {
             case "stats":
                 this.#updateStats(payload);
@@ -200,6 +200,7 @@ class Node {
     #onClose(code, reason) {
         this.connected = false;
         this.aqua.emit("nodeDisconnect", this, { code, reason });
+        clearTimeout(this.#reconnectTimeoutId);
         this.#reconnect();
     }
 
@@ -253,11 +254,12 @@ class Node {
     }
 
     destroy(clean = false) {
-        if (clean) {
-            this.aqua.emit("nodeDestroy", this);
-            this.aqua.nodes.delete(this.name);
-            return;
-        }
+            clearTimeout(this.#reconnectTimeoutId);
+            if (clean) {
+                this.aqua.emit("nodeDestroy", this);
+                this.aqua.nodes.delete(this.name);
+                return;
+            }
         if (this.connected) {
             for (const player of this.aqua.players.values()) {
                 if (player.node === this) {
@@ -274,4 +276,4 @@ class Node {
     }
 }
 
-module.exports = Node 
+export {Node} 
