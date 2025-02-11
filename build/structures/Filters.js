@@ -168,4 +168,4 @@ class Filters {
     }
 }
 
-module.exports = Filters
+export {Filters}
