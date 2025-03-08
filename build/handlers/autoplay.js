@@ -1,86 +1,52 @@
 const https = require('https');
-const cheerio = require('cheerio');
 
 function fetch(url, options = {}) {
     return new Promise((resolve, reject) => {
-        https.get(url, options, (res) => {
+        const req = https.get(url, options, (res) => {
+            if (res.statusCode !== 200) {
+                reject(new Error(`Request failed. Status code: ${res.statusCode}`));
+                return;
+            }
             let data = '';
-
-            res.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            res.on('end', () => {
-                if (res.statusCode >= 200 && res.statusCode < 300) {
-                    resolve({ status: res.statusCode, text: () => Promise.resolve(data) });
-                } else {
-                    reject(new Error(`Failed to fetch URL. Status code: ${res.statusCode}`));
-                }
-            });
-        }).on('error', (err) => {
-            reject(err);
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => resolve(data));
         });
+        req.on('error', reject);
+        req.end();
     });
 }
+
 async function scAutoPlay(url) {
     try {
-        const res = await fetch(`${url}/recommended`);
-
-        const html = await res.text();
-        const $ = cheerio.load(html);
-
-        const hrefs = [];
-        $('noscript').each((i, noscript) => {
-            if (i === 1) {
-                const section = $(noscript).find('section');
-                section.find('article').each((_, article) => {
-                    const h2 = $(article).find('h2[itemprop="name"]');
-                    const a = h2.find('a[itemprop="url"]');
-                    const href = `https://soundcloud.com${a.attr('href')}`;
-                    hrefs.push(href);
-                });
-            }
-        });
-
-        if (hrefs.length === 0) {
-            throw new Error('No recommended tracks found.');
-        }
-
-        return hrefs;
+        const html = await fetch(`${url}/recommended`);
+        const matches = [...html.matchAll(/<h2 itemprop="name">.*?<a itemprop="url" href="(.*?)"/g)];
+        
+        const hrefs = matches.map(match => `https://soundcloud.com${match[1]}`);
+        
+        return hrefs.filter((href, index, self) => self.indexOf(href) === index); // Remove duplicates
     } catch (error) {
-        console.error('Error in scAutoPlay:', error.message);
-        throw error;
+        console.error("Error fetching SoundCloud recommendations:", error);
+        return [];
     }
 }
 
 async function spAutoPlay(track_id) {
     try {
         const tokenResponse = await fetch("https://open.spotify.com/get_access_token?reason=transport&productType=embed");
-        const tokenBody = JSON.parse(await tokenResponse.text());
-
-        if (!tokenBody.accessToken) {
-            throw new Error('Failed to fetch Spotify access token.');
-        }
-
+        const { accessToken } = JSON.parse(tokenResponse);
+        
+        if (!accessToken) throw new Error("Failed to retrieve Spotify access token");
+        
         const recommendationsResponse = await fetch(`https://api.spotify.com/v1/recommendations?limit=10&seed_tracks=${track_id}`, {
-            headers: {
-                Authorization: `Bearer ${tokenBody.accessToken}`,
-                'Content-Type': 'application/json',
-            },
+            headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
         });
-
-        const recommendations = JSON.parse(await recommendationsResponse.text());
-
-        if (!recommendations.tracks || recommendations.tracks.length === 0) {
-            throw new Error('No recommended tracks found.');
-        }
-
-
-        const randomTrack = recommendations.tracks[Math.floor(Math.random() * recommendations.tracks.length)];
-        return randomTrack.id;
+        
+        const { tracks } = JSON.parse(recommendationsResponse);
+        
+        return tracks.length ? tracks[Math.floor(Math.random() * tracks.length)].id : null;
     } catch (error) {
-        console.error('Error in spAutoPlay:', error.message);
-        throw error;
+        console.error("Error fetching Spotify recommendations:", error);
+        return null;
     }
 }
 
