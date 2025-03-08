@@ -78,36 +78,39 @@ class Player extends EventEmitter {
         return this.current;
     }
 
-    async autoplay(player) {
+    async  autoplay(player) {
         if (!player) {
-            if (player == null || player == false) {
-                this.isAutoplay = false;
-                return this;
-            } else {
-                throw new Error("Missing argument. Quick Fix: player.autoplay(player)");
-            }
+            throw new Error("Missing argument. Quick Fix: player.autoplay(player)");
         }
-
         this.isAutoplay = true;
-
         if (this.previous) {
             try {
                 let response;
-                if (this.previous.info.sourceName === "youtube") {
-                    const data = `https://www.youtube.com/watch?v=${this.previous.info.identifier}&list=RD${this.previous.info.identifier}`;
-                    response = await this.aqua.resolve({ query: data, source: "ytmsearch", requester: this.previous.info.requester });
-                } else if (this.previous.info.sourceName === "soundcloud") {
-                    const data = await scAutoPlay(this.previous.info.uri);
-                    response = await this.aqua.resolve({ query: data, source: "scsearch", requester: this.previous.info.requester });
-                } else if (this.previous.info.sourceName === "spotify") {
-                    const data = await spAutoPlay(this.previous.info.identifier);
-                    response = await this.aqua.resolve({ query: `https://open.spotify.com/track/${data}`, requester: this.previous.info.requester });
+                const sourceName = this.previous.info.sourceName;
+                let data;
+                switch (sourceName) {
+                    case "youtube":
+                        data = `https://www.youtube.com/watch?v=${this.previous.info.identifier}&list=RD${this.previous.info.identifier}`;
+                        response = await this.aqua.resolve({ query: data, source: "ytmsearch", requester: this.previous.info.requester });
+                        break;
+                    case "soundcloud":
+                        const scResults = await scAutoPlay(this.previous.info.uri);
+                        if (!scResults.length) return this.stop();
+                        data = scResults[0];
+                        this.aqua.emit('debug', this.guildId, `Autoplaying: ${data}`);
+                        response = await this.aqua.resolve({ query: data, source: "scsearch", requester: this.previous.info.requester });
+                        break;
+                    case "spotify":
+                        data = await spAutoPlay(this.previous.info.identifier);
+                        if (!data) return this.stop();
+                        response = await this.aqua.resolve({ query: `https://open.spotify.com/track/${data}`, requester: this.previous.info.requester });
+                        break;
+                    default:
+                        return this.stop();
                 }
-
                 if (!response || !response.tracks || ["error", "empty", "LOAD_FAILED", "NO_MATCHES"].includes(response.loadType)) {
                     return this.stop();
                 }
-
                 const track = response.tracks[Math.floor(Math.random() * response.tracks.length)];
                 this.aqua.emit('debug', this.guildId, `Autoplaying: ${track.title}. ${track}`);
                 this.queue.push(track);
@@ -115,12 +118,13 @@ class Player extends EventEmitter {
                 return this;
             } catch (e) {
                 console.error("Autoplay error:", e);
-                return this.stop();
+                return this.stop(); 
             }
         } else {
             return this;
         }
     }
+    
 
     addToPreviousTrack(track) {
         if (!track) return;
@@ -347,14 +351,8 @@ class Player extends EventEmitter {
             player.queue.push(track);
         }
 
-        if (player.queue.isEmpty()) {
-            this.playing = false;
-            if (this.leaveOnEnd) {
-                this.clearData();   
-                this.cleanup();
-            }
-            this.aqua.emit("queueEnd", player);
-            return;
+        if (player.queue.isEmpty() && this.isAutoplay) {
+            await this.autoplay(player);
         }
 
         await player.play();
