@@ -19,11 +19,18 @@ function fetch(url, options = {}) {
 async function scAutoPlay(url) {
     try {
         const html = await fetch(`${url}/recommended`);
-        const matches = [...html.matchAll(/<h2 itemprop="name">.*?<a itemprop="url" href="(.*?)"/g)];
         
-        const hrefs = matches.map(match => `https://soundcloud.com${match[1]}`);
+        const matches = [...html.matchAll(/<a itemprop="url" href="(\/.*?)"/g)];
         
-        return hrefs.filter((href, index, self) => self.indexOf(href) === index); // Remove duplicates
+        const hrefs = [...new Set(matches.map(match => `https://soundcloud.com${match[1]}`))];
+        
+        if (hrefs.length === 0) {
+            throw new Error("No recommended tracks found on SoundCloud.");
+        }
+        
+        const shuffledHrefs = hrefs.sort(() => Math.random() - 0.5);
+        
+        return shuffledHrefs;
     } catch (error) {
         console.error("Error fetching SoundCloud recommendations:", error);
         return [];
@@ -43,7 +50,12 @@ async function spAutoPlay(track_id) {
         
         const { tracks } = JSON.parse(recommendationsResponse);
         
-        return tracks.length ? tracks[Math.floor(Math.random() * tracks.length)].id : null;
+        if (!tracks || tracks.length === 0) {
+            throw new Error("No recommended tracks found on Spotify.");
+        }
+        
+        // Return a random track ID
+        return tracks[Math.floor(Math.random() * tracks.length)].id;
     } catch (error) {
         console.error("Error fetching Spotify recommendations:", error);
         return null;
