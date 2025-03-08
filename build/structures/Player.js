@@ -78,54 +78,55 @@ class Player extends EventEmitter {
         return this.current;
     }
 
-    async  autoplay(player) {
-        if (!player) {
-            throw new Error("Missing argument. Quick Fix: player.autoplay(player)");
-        }
+    async autoplay(player) {
+        if (!player) throw new Error("Missing argument. Quick Fix: player.autoplay(player)");
+    
         this.isAutoplay = true;
-        if (this.previous) {
-            try {
-                let response;
-                const sourceName = this.previous.info.sourceName;
-                let data;
-                switch (sourceName) {
-                    case "youtube":
-                        data = `https://www.youtube.com/watch?v=${this.previous.info.identifier}&list=RD${this.previous.info.identifier}`;
-                        response = await this.aqua.resolve({ query: data, source: "ytmsearch", requester: this.previous.info.requester });
-                        break;
-                    case "soundcloud":
-                        const scResults = await scAutoPlay(this.previous.info.uri);
-                        if (!scResults.length) return this.stop();
-                        data = scResults[0];
-                        this.aqua.emit('debug', this.guildId, `Autoplaying: ${data}`);
-                        response = await this.aqua.resolve({ query: data, source: "scsearch", requester: this.previous.info.requester });
-                        break;
-                    case "spotify":
-                        data = await spAutoPlay(this.previous.info.identifier);
-                        if (!data) return this.stop();
-                        response = await this.aqua.resolve({ query: `https://open.spotify.com/track/${data}`, requester: this.previous.info.requester });
-                        break;
-                    default:
-                        return this.stop();
-                }
-                if (!response || !response.tracks || ["error", "empty", "LOAD_FAILED", "NO_MATCHES"].includes(response.loadType)) {
+        if (!this.previous) return this;
+    
+        try {
+            const { sourceName, identifier, uri, requester } = this.previous.info;
+            let query, source, response;
+    
+            switch (sourceName) {
+                case "youtube":
+                    query = `https://www.youtube.com/watch?v=${identifier}&list=RD${identifier}`;
+                    source = "ytmsearch";
+                    break;
+                case "soundcloud":
+                    const scResults = await scAutoPlay(uri);
+                    if (!scResults?.length) return this.stop();
+                    query = scResults[0];
+                    source = "scsearch";
+                    break;
+                case "spotify":
+                    const spResult = await spAutoPlay(identifier);
+                    if (!spResult) return this.stop();
+                    query = `https://open.spotify.com/track/${spResult}`;
+                    break;
+                default:
                     return this.stop();
-                }
-                const track = response.tracks[Math.floor(Math.random() * response.tracks.length)];
-                this.aqua.emit('debug', this.guildId, `Autoplaying: ${track.title}. ${track}`);
-                this.queue.push(track);
-                this.play();
-                return this;
-            } catch (e) {
-                console.error("Autoplay error:", e);
-                return this.stop(); 
             }
-        } else {
+    
+            response = await this.aqua.resolve({ query, source, requester });
+            
+            if (!response?.tracks?.length || ["error", "empty", "LOAD_FAILED", "NO_MATCHES"].includes(response.loadType)) {
+                return this.stop();
+            }
+    
+            const track = response.tracks[Math.floor(Math.random() * response.tracks.length)];
+            this.aqua.emit('debug', this.guildId, `Autoplaying: ${track.title}`);
+            this.queue.push(track);
+            this.play();
+    
             return this;
+        } catch (error) {
+            console.error("Autoplay error:", error);
+            return this.stop();
         }
     }
     
-
+    
     addToPreviousTrack(track) {
         if (!track) return;
         
